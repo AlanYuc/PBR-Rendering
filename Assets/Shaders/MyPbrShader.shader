@@ -227,16 +227,17 @@ Shader "MyPBR/MyPbrRenderingShader"
             //
 
             //Disney BRDF
-            float3 DisneySpecular(float3 L, float3 V, float3 N, float3 H, float R, float F)
+
+            float3 DisneyDiffuse(float3 L, float3 V, float3 N, float R, float3 H)
             {
-                float alpha = R * R;
-                float D = alpha / (UNITY_PI * pow((dot(H, N) * (alpha - 1.0) + 1.0), 2.0));
-
-                float G = min(1.0, min(2.0 * dot(N, H) * dot(N, V) / dot(V, H), 2.0 * dot(N, H) * dot(N, L) / dot(V, H)));
-
-                float3 specular = (F * D * G) / (4.0 * max(dot(N, L), 0.0) * max(dot(N, V), 0.0));
-
-                return specular;
+                float NdotL = max(dot(N, L), 0.0);
+                float NdotV = max(dot(N, V), 0.0);
+                float VdotH = max(dot(V, H), 0.0);
+                
+                float FD90 = 0.5 + 2 * VdotH * VdotH * R;
+                float FV = 1 + (FD90 - 1) * Pow5(1 - NdotV);
+                float FL = 1 + (FD90 - 1) * Pow5(1 - NdotL);
+                return ( UNITY_PI * FV * FL );
             }
             //
 
@@ -267,7 +268,8 @@ Shader "MyPBR/MyPbrRenderingShader"
                 
                 float metallic = _Metallic;
                 if(_UseMetallicMap == 1){
-                    metallic  = tex2D(_MetallicMap , i.uv).r;
+                    //metallic  = tex2D(_MetallicMap , i.uv).r;
+                    metallic  = tex2D(_MetallicMap , i.uv).r * _Metallic;
                 }
                 
                 float roughness = _Roughness;
@@ -331,7 +333,7 @@ Shader "MyPBR/MyPbrRenderingShader"
                 float3 diffuseON = OrenNayarDiffuse(lightDir, viewDir, normal, albedo, _Roughness);
 
                 //Disney
-                float specularD = DisneySpecular(lightDir, viewDir, normal, halfV, _Roughness, F0);
+                float3 diffuseD = DisneyDiffuse(lightDir, viewDir, normal, _Roughness, halfV);
 
 
                 float3 kS = F;
@@ -373,8 +375,8 @@ Shader "MyPBR/MyPbrRenderingShader"
                     diffuse = diffuseON;
                 }
                 else if(_UsePBR_Disney == 1){
-                    specular = specularD;
-                    diffuse = (1.0 - F0) * (albedo / UNITY_PI);
+                    specular = specularCT * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
+                    diffuse = albedo * diffuseD / UNITY_PI;
                 }
                 else{
                     specular = specularCT * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
@@ -389,7 +391,8 @@ Shader "MyPBR/MyPbrRenderingShader"
 
 
                 //float3 ambient = float3(0.03,0.03,0.03) * albedo * ao;
-                float3 ambient = UNITY_LIGHTMODEL_AMBIENT * albedo * ao * ambientIBL;
+                //float3 ambient = UNITY_LIGHTMODEL_AMBIENT * albedo * ao * ambientIBL;
+                float3 ambient = albedo * ao * ambientIBL;
                 float3 color = ambient + specular + diffuse;
 
                 color = color / (color + float3(1.0,1.0,1.0));
