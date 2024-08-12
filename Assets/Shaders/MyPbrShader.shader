@@ -158,23 +158,25 @@ Shader "MyPBR/MyPbrRenderingShader"
              }
 
             //***********AshikhminShirley***********************
-            float AshikhminShirley_D(float3 H, float3 N, float shininessU, float shininessV)
+            float AshikhminShirley_D(float3 H, float3 N, float Nu, float Nv)
             {
                 float NH = saturate(dot(N, H));
                 float HU = H.x;
                 float HV = H.z;
 
-                float e = shininessU * HU * HU + shininessV * HV * HV;
-                float normalizationFactor = sqrt((shininessU + 1.0) * (shininessV + 1.0)) / (8.0 * UNITY_PI);
+                float e = Nu * HU * HU + Nv * HV * HV;
+                float normalizationFactor = sqrt((Nu + 1.0) * (Nv + 1.0));
 
                 return normalizationFactor * pow(NH, e);
             }
 
-            float AshikhminShirley_G(float3 V, float3 L, float3 N)
+            float AshikhminShirley_G(float3 V, float3 L, float3 N, float3 H, float Nu, float Nv, float P)
             {
-                float NV = saturate(dot(N, V));
-                float NL = saturate(dot(N, L));
-                return 2.0 * NV * NL / (NV + NL);
+                //float NV = saturate(dot(N, V));
+                //float NL = saturate(dot(N, L));
+                //return 2.0 * NV * NL / (NV + NL);
+
+
             }
 
             float3 AshikhminShirley_Diffuse(float3 L, float3 V, float3 N, float3 diffuseColor, float S)
@@ -192,8 +194,8 @@ Shader "MyPBR/MyPbrRenderingShader"
             float3 ChristensenBurleySpecular(float3 L, float3 V, float3 N, float3 H, float R, float F)
             {
                 //s=1.9 - A + 3.5(A - 0.8)2
-                float a = R;
-                float s = 1.9 - a + 3.5 * pow(a - 0.8, 2.0);
+                float s = 1.9 - R + 3.5 * pow(R - 0.8, 2.0);
+                //float s = R;
 
                 float NdotH = max(dot(N, H), 0.0);
                 float D = exp(-pow(NdotH - 1.0, 2.0) / (s * s)) / (UNITY_PI * s * s * pow(NdotH, 4.0));
@@ -319,15 +321,15 @@ Shader "MyPBR/MyPbrRenderingShader"
                 //Ashikhmin-Shirley
                 float AS_D = AshikhminShirley_D(halfV, normal, _BrightnessU, _BrightnessV);
                 float3 AS_F = F;
-                float AS_G = AshikhminShirley_G(viewDir, lightDir, normal);
+                //float AS_G = AshikhminShirley_G(viewDir, lightDir, normal);
 
-                float3 specularAS = (AS_D * AS_F * AS_G) / (4.0 * max(dot(normal, viewDir), 0.001) * max(dot(normal, lightDir), 0.001));
+                float3 specularAS = (AS_D * AS_F) / (2 * (max(dot(viewDir, halfV), 0.001)) * 4.0  * max(dot(normal, viewDir), 0.001) * max(dot(normal, lightDir), 0.001));
                 float3 diffuseAS = AshikhminShirley_Diffuse(lightDir, viewDir, normal, albedo, _SpecularDiffuseScale);
 
                 //Christensen Burley
                 float3 specularCB = ChristensenBurleySpecular(lightDir, viewDir, normal, halfV, _Roughness, F0);
-                //float3 diffuseCB = albedo * radiance / UNITY_PI;
-                float3 diffuseCB = albedo * radiance;
+                float3 diffuseCB = albedo * radiance / UNITY_PI;
+                //float3 diffuseCB = albedo * radiance;
 
                 //Oren-Nayar BRDF
                 float3 diffuseON = OrenNayarDiffuse(lightDir, viewDir, normal, albedo, _Roughness);
