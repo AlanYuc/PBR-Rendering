@@ -7,6 +7,7 @@ public class MenuManagement : MonoBehaviour
     private GameObject menu;
     private GameObject setting;
     private GameObject info;
+    private GameObject help;
 
     // Start is called before the first frame update
     void Start()
@@ -17,6 +18,7 @@ public class MenuManagement : MonoBehaviour
 
         setting = transform.parent.Find("SettingPanel").gameObject;
         info = transform.parent.Find("InfoPanel").gameObject;
+        help = transform.parent.Find("HelpPanel").gameObject;
     }
 
     // Update is called once per frame
@@ -38,5 +40,10 @@ public class MenuManagement : MonoBehaviour
     public void OnClickSetting()
     {
         setting.SetActive(true);
+    }
+
+    public void OnClickHelp()
+    {
+        help.SetActive(true);
     }
 }
