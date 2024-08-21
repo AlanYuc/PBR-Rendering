@@ -1,3 +1,5 @@
+// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+
 
 Shader "MyPBR/MyPbrRenderingShader"
 {
@@ -26,6 +28,7 @@ Shader "MyPBR/MyPbrRenderingShader"
         _UseMetallicMap ("Use MetallicMap" , Float) = 0
         _UseCook_Torrance("Use Cook-Torrance" , Float) = 0
         _UseKajiya_Kay ("Use Kajiya-Kay" , Float) = 0
+        _UseKajiya_Kay_T ("Use Kajiya-Kay-T" , Float) = 0
         _UseAshikhmin_Shirley ("Use Ashikhmin-Shirley" , Float) = 0
         _UseChristensen_Burley ("Use Christensen-Burley" , Float) = 0
         _UseOren_Nayar ("Use Oren-Nayar" , Float) = 0
@@ -34,6 +37,10 @@ Shader "MyPBR/MyPbrRenderingShader"
         _BrightnessU ("Shininess U", Range(0.1, 100)) = 30.0
         _BrightnessV ("Shininess V", Range(0.1, 100)) = 30.0
         _SpecularDiffuseScale ("Specular Reflectance", Range(0.0, 1.0)) = 0.5
+
+        _ShiftValue ("Shift Value",Range(0, 64)) = 0 
+        _R ("Reflectance", Range(0, 1)) = 0.5
+        _Rd ("Reflectance Diffuse", Range(0, 1)) = 0.5
     }
 
     SubShader
@@ -96,10 +103,14 @@ Shader "MyPBR/MyPbrRenderingShader"
             float _UseChristensen_Burley;
             float _UseOren_Nayar;
             float _UsePBR_Disney;
+            float _UseKajiya_Kay_T;
 
             float _BrightnessU;
             float _BrightnessV;
             float _SpecularDiffuseScale;
+            float _ShiftValue;
+            float _R;
+            float _Rd;
 
             float DistributionGGX(float3 N, float3 H, float R)
             {
@@ -142,19 +153,73 @@ Shader "MyPBR/MyPbrRenderingShader"
             }
 
             //KajiyaKay
-            float3 KajiyaKaySpecular(float3 L, float3 V, float3 N, float3 H, float3 T, float R)
+            float3 shiftMapTangent(float3 T, float3 N, float ST){
+                return normalize(ST * N + T);
+            }
+
+            float3 KajiyaKayDiffuse(float3 L, float3 T){
+                float3 diffuse = sqrt(1 - pow(dot(L, T), 2));
+                return diffuse;
+            }
+                            
+            float KajiyaKaySpecularVlaue(float3 T, float3 H, float S){
+                float TdotH = dot(T, H);
+                float sinTH = sqrt(1 - TdotH * TdotH);
+                float dirAtten = smoothstep(-1, 0, TdotH);
+                return dirAtten * pow(sinTH, S);
+            }
+
+            float3 KajiyaKaySpecular(float3 L, float3 T, float3 V, float G){
+                //float TdotL = max(dot(T, L), 0.0);
+                //float TdotV = max(dot(T, V), 0.0);
+                float TdotL = dot(T, L);
+                float TdotV = dot(T, V);
+                float3 cos2sin_TdotL = sqrt(1.0 - pow(TdotL, 2));
+                float3 cos2sin_TdotV = sqrt(1.0 - pow(TdotV, 2));
+                float3 specular = pow(abs(TdotL * TdotV + cos2sin_TdotL * cos2sin_TdotV), G);
+                //return float3(specular, specular, specular);
+                return specular;
+            }
+            float3 KajiyaKaySpecularTangent(float3 L, float3 V, float3 N, float3 H, float3 T, float R)
              {
-                float3 Ht = normalize(H - dot(H, T) * T);
-                float3 Lt = normalize(L - dot(L, T) * T);
-                float3 Vt = normalize(V - dot(V, T) * T);
+                //float3 Ht = normalize(H - dot(H, T) * T);
+                //float3 Lt = normalize(L - dot(L, T) * T);
+                //float3 Vt = normalize(V - dot(V, T) * T);
 
-                float Ht_dot_N = max(dot(Ht, N), 0.0);
-                float Vt_dot_Ht = max(dot(Vt, Ht), 0.0);
-                float Vt_dot_T = max(dot(Vt, T), 0.0);
+                //float Ht_dot_N = max(dot(Ht, N), 0.0);
+                //float Vt_dot_Ht = max(dot(Vt, Ht), 0.0);
+                //float Vt_dot_T = max(dot(Vt, T), 0.0);
 
-                float specular = pow(Ht_dot_N, 1.0 / (R + 0.001)) / (4.0 * Vt_dot_Ht * Vt_dot_T + 0.0001);
+                //float specular = pow(Ht_dot_N, 1.0 / (R + 0.001)) / (4.0 * Vt_dot_Ht * Vt_dot_T + 0.0001);
+
+                //return float3(specular, specular, specular);
+
+
+                float3 Ht = normalize(H - dot(H, T) * dot(H, T));
+                float3 Lt = normalize(L - dot(L, T) * dot(L, T));
+                float3 Vt = normalize(V - dot(V, T) * dot(V, T));
+
+                float HtdotN = max(dot(Ht, N), 0.0);
+                float VtdotHt = max(dot(Vt, Ht), 0.0);
+                float VtdotT = max(dot(Vt, T), 0.0);
+
+                float specular = pow(HtdotN, 1.0 / (R + 0.001)) / (4.0 * VtdotHt * VtdotT + 0.0001);
 
                 return float3(specular, specular, specular);
+
+
+
+                //
+                //float NdotH = max(dot(N, H), 0.0);
+                //float NdotL = max(dot(N, L), 0.0);
+                //float NdotV = max(dot(N, V), 0.0);
+
+                //float sinL = sqrt(1.0 - NdotL * NdotL);
+                //float sinV = sqrt(1.0 - NdotV * NdotV);
+
+                //float color = ((NdotL * NdotV) + (sinL * sinV));
+
+                //return float3(color, color, color);
              }
 
             //***********AshikhminShirley***********************
@@ -184,7 +249,7 @@ Shader "MyPBR/MyPbrRenderingShader"
                 float NV = saturate(dot(N, V));
                 float NL = saturate(dot(N, L));
 
-                float diffuseFactor = (28.0 / (23.0 * UNITY_PI)) * (1.0 - S / 2.0) * (1.0 - pow(1.0 - NL / 2.0, 5.0)) * (1.0 - pow(1.0 - NV / 2.0, 5.0));
+                float diffuseFactor = (28.0 * _Rd / (23.0 * UNITY_PI)) * (1.0 - S) * (1.0 - pow(1.0 - NL / 2.0, 5.0)) * (1.0 - pow(1.0 - NV / 2.0, 5.0));
 
                 return diffuseColor * diffuseFactor;
             }
@@ -286,16 +351,7 @@ Shader "MyPBR/MyPbrRenderingShader"
                 normal.z = sqrt(1 - saturate(dot(normal.xy , normal.xy)));
                 normal = normalize(mul(float3x3(i.worldTangent, i.worldBinormal, i.worldNormal), normal));
                 
-
-                //HeightMap
-                //float heightValue = tex2D(_HeightMap, i.uv).r;
-                //i.worldPos += normal * heightValue;
-
                 float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
-
-                float3 F0 = float3(0.04,0.04,0.04);
-                F0 = lerp(F0, albedo, metallic);
-
                 //float3 lightDir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
                 float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
                 float3 halfV = normalize(viewDir + lightDir);
@@ -303,6 +359,18 @@ Shader "MyPBR/MyPbrRenderingShader"
                 //float attenuation = 1.0 / (distance * distance);
                 //float3 radiance = _LightColor0.rgb * attenuation;
                 float3 radiance = _LightColor0.rgb;
+                float NdotL = max(dot(normal, lightDir), 0.0);
+
+                //HeightMap
+                //float heightValue = tex2D(_HeightMap, i.uv).r;
+                //i.worldPos += normal * heightValue;
+
+                
+
+                float3 F0 = float3(0.04,0.04,0.04);
+                F0 = lerp(F0, albedo, metallic);
+
+                
 
 
                 // Cook-Torrance BRDF
@@ -316,15 +384,32 @@ Shader "MyPBR/MyPbrRenderingShader"
 
 
                 //KajiyaKaySpecular
-                float3 specularKK = KajiyaKaySpecular(lightDir , viewDir , normal , halfV , i.worldTangent , roughness);
+                float3 bitangent = normalize(mul(unity_ObjectToWorld, cross(i.worldNormal, i.worldTangent)));
+                float3 KK_T = shiftMapTangent(bitangent, i.worldNormal, _ShiftValue);
+                float3 specularKK = KajiyaKaySpecular(lightDir, KK_T, viewDir, _Gloss);
+                float3 diffuseKK = KajiyaKayDiffuse(lightDir, i.worldTangent);
+
+                float3 specularKK_T = KajiyaKaySpecularTangent(lightDir , viewDir , normal , halfV , i.worldTangent , roughness);
+                float3 diffuseKK_T =  saturate(lerp(0.25, 1, NdotL)) * albedo * radiance;
+                
+                //specularKK = KajiyaKaySpecularVlaue(i.worldTangent, halfV, _BrightnessU);
+                //specularKK*=2;
 
                 //Ashikhmin-Shirley
                 float AS_D = AshikhminShirley_D(halfV, normal, _BrightnessU, _BrightnessV);
                 float3 AS_F = F;
+                //AS_F = _R + (1.0 - _R) * pow(1.0 - max(dot(lightDir, halfV), 0.0), 5.0);
+                //AS_F = _R + (1.0 - _R) * pow(1.0 - dot(halfV, viewDir), 5.0);
+                //AS_F = _R + (1.0 - _R) * pow(1.0 - dot(normal, lightDir), 5.0);
+                AS_F = _R + (1.0 - _R) * pow(1.0 - dot(viewDir, normal), 5.0);
                 //float AS_G = AshikhminShirley_G(viewDir, lightDir, normal);
 
-                float3 specularAS = (AS_D * AS_F) / (2 * (max(dot(viewDir, halfV), 0.001)) * 4.0  * max(dot(normal, viewDir), 0.001) * max(dot(normal, lightDir), 0.001));
-                float3 diffuseAS = AshikhminShirley_Diffuse(lightDir, viewDir, normal, albedo, _SpecularDiffuseScale);
+                float3 specularAS = (AS_D * AS_F) / ((max(dot(viewDir, halfV), 0.001)) * 4.0  * max(dot(normal, viewDir), 0.001) * max(dot(normal, lightDir), 0.001));
+                //float3 specularAS = (AS_D * AS_F) / ((dot(viewDir, halfV)) * 4.0  * dot(normal, viewDir) * dot(normal, lightDir));
+                //specularAS = (AS_D * AS_F)/(4 * max(max(dot(normal, viewDir), 0.001), max(dot(normal, lightDir), 0.001)));
+                specularAS = (AS_D * AS_F)/(4 * dot(halfV, viewDir) * max(dot(normal, viewDir), dot(normal, lightDir)));
+                //float3 diffuseAS = AshikhminShirley_Diffuse(lightDir, viewDir, normal, albedo, _SpecularDiffuseScale);
+                float3 diffuseAS = AshikhminShirley_Diffuse(lightDir, viewDir, normal, albedo, _R);
 
                 //Christensen Burley
                 float3 specularCB = ChristensenBurleySpecular(lightDir, viewDir, normal, halfV, _Roughness, F0);
@@ -342,7 +427,7 @@ Shader "MyPBR/MyPbrRenderingShader"
                 float3 kD = float3(1.0,1.0,1.0) - kS;
                 kD *= 1.0 - metallic;
 
-                float NdotL = max(dot(normal, lightDir), 0.0);
+                
 
                 //float3 specularFinal = specular * radiance * pow(NdotL , _Gloss) * pow(specularMapValue.rgb , _SpecularScale);
                 //float3 specularFinal = specular * radiance * pow(NdotL , _Gloss) * specularMapValue.rgb * _SpecularIntensity;
@@ -361,11 +446,20 @@ Shader "MyPBR/MyPbrRenderingShader"
                     diffuse = kD * albedo * radiance * NdotL;
                 }
                 else if(_UseKajiya_Kay == 1){
-                    specular = specularKK * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
-                    diffuse = kD * albedo * radiance * NdotL;
+                    //specular = specularKK * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
+                    //diffuse = kD * albedo * radiance * NdotL;
+                    specular = specularKK * _SpecularIntensity;
+                    diffuse = diffuseKK * albedo * radiance;
+                }
+                else if(_UseKajiya_Kay_T == 1){
+                    //specular = specularKK * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
+                    //diffuse = kD * albedo * radiance * NdotL;
+                    specular = specularKK_T * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
+                    diffuse = diffuseKK_T * albedo * radiance;
                 }
                 else if(_UseAshikhmin_Shirley == 1){
-                    specular = specularAS * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
+                    //specular = specularAS * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
+                    specular = specularAS * _SpecularIntensity;
                     diffuse = diffuseAS;
                 }
                 else if(_UseChristensen_Burley == 1){

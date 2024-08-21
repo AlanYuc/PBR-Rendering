@@ -86,6 +86,7 @@ public class ParameterControl : MonoBehaviour
 
     private float useCookTorrance = 1;
     private float usekajiyaKay = 0;
+    private float usekajiyaKayT = 0;
     private float useAshikhminShirley = 0;
     private float useChristensenBurley = 0;
     private float useOrenNayar = 0;
@@ -343,6 +344,7 @@ public class ParameterControl : MonoBehaviour
     {
         currentMaterial.SetFloat("_UseCook_Torrance", useCookTorrance);
         currentMaterial.SetFloat("_UseKajiya_Kay", usekajiyaKay);
+        currentMaterial.SetFloat("_UseKajiya_Kay_T", usekajiyaKayT);
         currentMaterial.SetFloat("_UseAshikhmin_Shirley", useAshikhminShirley);
         currentMaterial.SetFloat("_UseChristensen_Burley", useChristensenBurley);
         currentMaterial.SetFloat("_UseOren_Nayar", useOrenNayar);
@@ -515,6 +517,7 @@ public class ParameterControl : MonoBehaviour
         {
             useCookTorrance = 1;
             usekajiyaKay = 0;
+            usekajiyaKayT = 0;
             useAshikhminShirley = 0;
             useChristensenBurley = 0;
             useOrenNayar = 0;
@@ -529,6 +532,22 @@ public class ParameterControl : MonoBehaviour
         {
             useCookTorrance = 0;
             usekajiyaKay = 1;
+            usekajiyaKayT = 0;
+            useAshikhminShirley = 0;
+            useChristensenBurley = 0;
+            useOrenNayar = 0;
+            usePbrDisney = 0;
+            SetBRDF();
+        }
+    }
+
+    public void OnUsekajiyaKayT(bool isOn)
+    {
+        if (isOn)
+        {
+            useCookTorrance = 0;
+            usekajiyaKay = 0;
+            usekajiyaKayT = 1;
             useAshikhminShirley = 0;
             useChristensenBurley = 0;
             useOrenNayar = 0;
@@ -543,6 +562,7 @@ public class ParameterControl : MonoBehaviour
         {
             useCookTorrance = 0;
             usekajiyaKay = 0;
+            usekajiyaKayT = 0;
             useAshikhminShirley = 1;
             useChristensenBurley = 0;
             useOrenNayar = 0;
@@ -557,6 +577,7 @@ public class ParameterControl : MonoBehaviour
         {
             useCookTorrance = 0;
             usekajiyaKay = 0;
+            usekajiyaKayT = 0;
             useAshikhminShirley = 0;
             useChristensenBurley = 1;
             useOrenNayar = 0;
@@ -571,6 +592,7 @@ public class ParameterControl : MonoBehaviour
         {
             useCookTorrance = 0;
             usekajiyaKay = 0;
+            usekajiyaKayT = 0;
             useAshikhminShirley = 0;
             useChristensenBurley = 0;
             useOrenNayar = 1;
@@ -585,6 +607,7 @@ public class ParameterControl : MonoBehaviour
         {
             useCookTorrance = 0;
             usekajiyaKay = 0;
+            usekajiyaKayT = 0;
             useAshikhminShirley = 0;
             useChristensenBurley = 0;
             useOrenNayar = 0;
