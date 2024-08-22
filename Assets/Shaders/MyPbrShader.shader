@@ -222,7 +222,7 @@ Shader "MyPBR/MyPbrRenderingShader"
                 //return float3(color, color, color);
              }
 
-            //***********AshikhminShirley***********************
+            //AshikhminShirley
             float AshikhminShirley_D(float3 H, float3 N, float Nu, float Nv)
             {
                 float NH = saturate(dot(N, H));
@@ -240,8 +240,6 @@ Shader "MyPBR/MyPbrRenderingShader"
                 //float NV = saturate(dot(N, V));
                 //float NL = saturate(dot(N, L));
                 //return 2.0 * NV * NL / (NV + NL);
-
-
             }
 
             float3 AshikhminShirley_Diffuse(float3 L, float3 V, float3 N, float3 diffuseColor, float S)
@@ -253,7 +251,6 @@ Shader "MyPBR/MyPbrRenderingShader"
 
                 return diffuseColor * diffuseFactor;
             }
-            //**********************************
 
             //Christensen Burley BRDF
             float3 ChristensenBurleySpecular(float3 L, float3 V, float3 N, float3 H, float R, float F)
@@ -268,7 +265,6 @@ Shader "MyPBR/MyPbrRenderingShader"
                 float3 specularCB = (D * F) / (4.0 * max(dot(N, L), 0.001) * max(dot(N, V), 0.001));
                 return specularCB;
             }
-            //
 
             //Oren-Nayar BRDF
             float3 OrenNayarDiffuse(float3 L, float3 V, float3 N, float3 albedo, float R)
@@ -291,10 +287,8 @@ Shader "MyPBR/MyPbrRenderingShader"
 
                 return diffuseColor * all;
             }
-            //
 
             //Disney BRDF
-
             float3 DisneyDiffuse(float3 L, float3 V, float3 N, float R, float3 H)
             {
                 float NdotL = max(dot(N, L), 0.0);
@@ -306,7 +300,6 @@ Shader "MyPBR/MyPbrRenderingShader"
                 float FL = 1 + (FD90 - 1) * Pow5(1 - NdotL);
                 return ( UNITY_PI * FV * FL );
             }
-            //
 
 
 
@@ -331,17 +324,14 @@ Shader "MyPBR/MyPbrRenderingShader"
             fixed4 frag(v2f i) : SV_Target
             {
                 float3 albedo = pow(tex2D(_AlbedoMap, i.uv).rgb * _ColorTint.rgb, _GammaCorrect);
-                //float3 albedo = pow(tex2D(_AlbedoMap, i.uv).rgb * _ColorTint.rgb, 2.2);
                 
                 float metallic = _Metallic;
                 if(_UseMetallicMap == 1){
-                    //metallic  = tex2D(_MetallicMap , i.uv).r;
                     metallic  = tex2D(_MetallicMap , i.uv).r * _Metallic;
                 }
                 
                 float roughness = _Roughness;
                 float ao = tex2D(_AOMap, i.uv).r;
-                //float3 specularMapValue = tex2D(_SpecularMap , i.uv).rgb;
                 float4 specularMapValue = tex2D(_SpecularMap , i.uv) * _SpecularMapScale;
 
 
@@ -352,7 +342,6 @@ Shader "MyPBR/MyPbrRenderingShader"
                 normal = normalize(mul(float3x3(i.worldTangent, i.worldBinormal, i.worldNormal), normal));
                 
                 float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
-                //float3 lightDir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
                 float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
                 float3 halfV = normalize(viewDir + lightDir);
                 float distance = length(_WorldSpaceLightPos0.xyz - i.worldPos);
@@ -405,10 +394,7 @@ Shader "MyPBR/MyPbrRenderingShader"
                 //float AS_G = AshikhminShirley_G(viewDir, lightDir, normal);
 
                 float3 specularAS = (AS_D * AS_F) / ((max(dot(viewDir, halfV), 0.001)) * 4.0  * max(dot(normal, viewDir), 0.001) * max(dot(normal, lightDir), 0.001));
-                //float3 specularAS = (AS_D * AS_F) / ((dot(viewDir, halfV)) * 4.0  * dot(normal, viewDir) * dot(normal, lightDir));
-                //specularAS = (AS_D * AS_F)/(4 * max(max(dot(normal, viewDir), 0.001), max(dot(normal, lightDir), 0.001)));
                 specularAS = (AS_D * AS_F)/(4 * dot(halfV, viewDir) * max(dot(normal, viewDir), dot(normal, lightDir)));
-                //float3 diffuseAS = AshikhminShirley_Diffuse(lightDir, viewDir, normal, albedo, _SpecularDiffuseScale);
                 float3 diffuseAS = AshikhminShirley_Diffuse(lightDir, viewDir, normal, albedo, _R);
 
                 //Christensen Burley
@@ -426,17 +412,6 @@ Shader "MyPBR/MyPbrRenderingShader"
                 float3 kS = F;
                 float3 kD = float3(1.0,1.0,1.0) - kS;
                 kD *= 1.0 - metallic;
-
-                
-
-                //float3 specularFinal = specular * radiance * pow(NdotL , _Gloss) * pow(specularMapValue.rgb , _SpecularScale);
-                //float3 specularFinal = specular * radiance * pow(NdotL , _Gloss) * specularMapValue.rgb * _SpecularIntensity;
-                //float3 diffuseFinal = kD * albedo / UNITY_PI * radiance * NdotL;
-                //diffuseFinal = diffuseAS * albedo * radiance * NdotL;
-
-                //set Cook-Torrance as default
-                //float3 specularFinal = specular * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
-                //float3 diffuseFinal = kD * albedo * radiance * NdotL;
                 
 
                 float3 specular;
@@ -446,19 +421,14 @@ Shader "MyPBR/MyPbrRenderingShader"
                     diffuse = kD * albedo * radiance * NdotL;
                 }
                 else if(_UseKajiya_Kay == 1){
-                    //specular = specularKK * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
-                    //diffuse = kD * albedo * radiance * NdotL;
                     specular = specularKK * _SpecularIntensity;
                     diffuse = diffuseKK * albedo * radiance;
                 }
                 else if(_UseKajiya_Kay_T == 1){
-                    //specular = specularKK * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
-                    //diffuse = kD * albedo * radiance * NdotL;
                     specular = specularKK_T * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
                     diffuse = diffuseKK_T * albedo * radiance;
                 }
                 else if(_UseAshikhmin_Shirley == 1){
-                    //specular = specularAS * radiance * pow(NdotL , _Gloss) * _SpecularIntensity;
                     specular = specularAS * _SpecularIntensity;
                     diffuse = diffuseAS;
                 }
