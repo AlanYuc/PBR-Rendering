@@ -173,7 +173,6 @@ public class ParameterControl : MonoBehaviour
         pbrDisneyToggle         = transform.Find("BRDF/PBR Disney").GetComponent<Toggle>();
 
 
-        //测试，暂时使用场景中默认的模型，之后要动态获取
         //currentModedl = GameObject.FindWithTag("Player");
         currentModedl = rusted_Iron;
         rfaTrans.gameObject.SetActive(false);
@@ -190,7 +189,6 @@ public class ParameterControl : MonoBehaviour
             Debug.Log("no find");
         }
 
-        //有的模型是MeshRenderer，有的是SkinnedMeshRenderer，需要分开
         currentMaterial = currentModedl.GetComponent<MeshRenderer>().material;
 
         //Default Setting

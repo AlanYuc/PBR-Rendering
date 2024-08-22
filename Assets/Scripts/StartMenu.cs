@@ -9,7 +9,6 @@ public class StartMenu : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            Debug.Log("退出程序");
             Application.Quit();
         }
     }
@@ -21,13 +20,11 @@ public class StartMenu : MonoBehaviour
 
     public void OnClickIntroduction()
     {
-        //显示介绍面板
-        Debug.Log("显示介绍面板");
+        
     }
 
     public void OnClickQuit()
     {
-        Debug.Log("退出程序");
         Application.Quit();
     }
 }
